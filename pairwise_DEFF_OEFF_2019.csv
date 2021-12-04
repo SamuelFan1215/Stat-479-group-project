@@ -1,0 +1,257 @@
+HomeTeam,VisitTeam,d_OEFF,d_DEFF
+Boston,Boston,0,0
+Brooklyn,Boston,-2.7,1.90000000000001
+Detroit,Boston,-3.3,1.40000000000001
+Indiana,Boston,-2.39999999999999,-1.3
+Milwaukee,Boston,1.40000000000001,-2.59999999999999
+Orlando,Boston,-3.39999999999999,0.400000000000006
+Philadelphia,Boston,0.299999999999997,2.10000000000001
+Toronto,Boston,0.900000000000006,-0.599999999999994
+Denver,Boston,0.700000000000003,1.10000000000001
+Golden State,Boston,3.7,1.8
+Houston,Boston,3.3,2.90000000000001
+LA Clippers,Boston,0.100000000000009,3.8
+Oklahoma City,Boston,-2,-0.700000000000003
+Portland,Boston,2.3,2.7
+San Antonio,Boston,0.600000000000009,3.40000000000001
+Utah,Boston,-1.39999999999999,-2.09999999999999
+Boston,Brooklyn,2.7,-1.90000000000001
+Brooklyn,Brooklyn,0,0
+Detroit,Brooklyn,-0.599999999999994,-0.5
+Indiana,Brooklyn,0.300000000000011,-3.2
+Milwaukee,Brooklyn,4.10000000000001,-4.5
+Orlando,Brooklyn,-0.699999999999989,-1.5
+Philadelphia,Brooklyn,3,0.200000000000003
+Toronto,Brooklyn,3.60000000000001,-2.5
+Denver,Brooklyn,3.40000000000001,-0.799999999999997
+Golden State,Brooklyn,6.40000000000001,-0.100000000000009
+Houston,Brooklyn,6,1
+LA Clippers,Brooklyn,2.80000000000001,1.89999999999999
+Oklahoma City,Brooklyn,0.700000000000003,-2.60000000000001
+Portland,Brooklyn,5,0.799999999999997
+San Antonio,Brooklyn,3.30000000000001,1.5
+Utah,Brooklyn,1.30000000000001,-4
+Boston,Detroit,3.3,-1.40000000000001
+Brooklyn,Detroit,0.599999999999994,0.5
+Detroit,Detroit,0,0
+Indiana,Detroit,0.900000000000006,-2.7
+Milwaukee,Detroit,4.7,-4
+Orlando,Detroit,-0.0999999999999943,-1
+Philadelphia,Detroit,3.59999999999999,0.700000000000003
+Toronto,Detroit,4.2,-2
+Denver,Detroit,4,-0.299999999999997
+Golden State,Detroit,7,0.399999999999991
+Houston,Detroit,6.59999999999999,1.5
+LA Clippers,Detroit,3.40000000000001,2.39999999999999
+Oklahoma City,Detroit,1.3,-2.10000000000001
+Portland,Detroit,5.59999999999999,1.3
+San Antonio,Detroit,3.90000000000001,2
+Utah,Detroit,1.90000000000001,-3.5
+Boston,Indiana,2.39999999999999,1.3
+Brooklyn,Indiana,-0.300000000000011,3.2
+Detroit,Indiana,-0.900000000000006,2.7
+Indiana,Indiana,0,0
+Milwaukee,Indiana,3.8,-1.3
+Orlando,Indiana,-1,1.7
+Philadelphia,Indiana,2.69999999999999,3.40000000000001
+Toronto,Indiana,3.3,0.700000000000003
+Denver,Indiana,3.09999999999999,2.40000000000001
+Golden State,Indiana,6.09999999999999,3.09999999999999
+Houston,Indiana,5.69999999999999,4.2
+LA Clippers,Indiana,2.5,5.09999999999999
+Oklahoma City,Indiana,0.399999999999991,0.599999999999994
+Portland,Indiana,4.69999999999999,4
+San Antonio,Indiana,3,4.7
+Utah,Indiana,1,-0.799999999999997
+Boston,Milwaukee,-1.40000000000001,2.59999999999999
+Brooklyn,Milwaukee,-4.10000000000001,4.5
+Detroit,Milwaukee,-4.7,4
+Indiana,Milwaukee,-3.8,1.3
+Milwaukee,Milwaukee,0,0
+Orlando,Milwaukee,-4.8,3
+Philadelphia,Milwaukee,-1.10000000000001,4.7
+Toronto,Milwaukee,-0.5,2
+Denver,Milwaukee,-0.700000000000003,3.7
+Golden State,Milwaukee,2.3,4.39999999999999
+Houston,Milwaukee,1.89999999999999,5.5
+LA Clippers,Milwaukee,-1.3,6.39999999999999
+Oklahoma City,Milwaukee,-3.40000000000001,1.89999999999999
+Portland,Milwaukee,0.899999999999992,5.3
+San Antonio,Milwaukee,-0.799999999999997,6
+Utah,Milwaukee,-2.8,0.5
+Boston,Orlando,3.39999999999999,-0.400000000000006
+Brooklyn,Orlando,0.699999999999989,1.5
+Detroit,Orlando,0.0999999999999943,1
+Indiana,Orlando,1,-1.7
+Milwaukee,Orlando,4.8,-3
+Orlando,Orlando,0,0
+Philadelphia,Orlando,3.69999999999999,1.7
+Toronto,Orlando,4.3,-1
+Denver,Orlando,4.09999999999999,0.700000000000003
+Golden State,Orlando,7.09999999999999,1.39999999999999
+Houston,Orlando,6.69999999999999,2.5
+LA Clippers,Orlando,3.5,3.39999999999999
+Oklahoma City,Orlando,1.39999999999999,-1.10000000000001
+Portland,Orlando,5.69999999999999,2.3
+San Antonio,Orlando,4,3
+Utah,Orlando,2,-2.5
+Boston,Philadelphia,-0.299999999999997,-2.10000000000001
+Brooklyn,Philadelphia,-3,-0.200000000000003
+Detroit,Philadelphia,-3.59999999999999,-0.700000000000003
+Indiana,Philadelphia,-2.69999999999999,-3.40000000000001
+Milwaukee,Philadelphia,1.10000000000001,-4.7
+Orlando,Philadelphia,-3.69999999999999,-1.7
+Philadelphia,Philadelphia,0,0
+Toronto,Philadelphia,0.600000000000009,-2.7
+Denver,Philadelphia,0.400000000000006,-1
+Golden State,Philadelphia,3.40000000000001,-0.300000000000011
+Houston,Philadelphia,3,0.799999999999997
+LA Clippers,Philadelphia,-0.199999999999989,1.69999999999999
+Oklahoma City,Philadelphia,-2.3,-2.80000000000001
+Portland,Philadelphia,2,0.599999999999994
+San Antonio,Philadelphia,0.300000000000011,1.3
+Utah,Philadelphia,-1.69999999999999,-4.2
+Boston,Toronto,-0.900000000000006,0.599999999999994
+Brooklyn,Toronto,-3.60000000000001,2.5
+Detroit,Toronto,-4.2,2
+Indiana,Toronto,-3.3,-0.700000000000003
+Milwaukee,Toronto,0.5,-2
+Orlando,Toronto,-4.3,1
+Philadelphia,Toronto,-0.600000000000009,2.7
+Toronto,Toronto,0,0
+Denver,Toronto,-0.200000000000003,1.7
+Golden State,Toronto,2.8,2.39999999999999
+Houston,Toronto,2.39999999999999,3.5
+LA Clippers,Toronto,-0.799999999999997,4.39999999999999
+Oklahoma City,Toronto,-2.90000000000001,-0.100000000000009
+Portland,Toronto,1.39999999999999,3.3
+San Antonio,Toronto,-0.299999999999997,4
+Utah,Toronto,-2.3,-1.5
+Boston,Denver,-0.700000000000003,-1.10000000000001
+Brooklyn,Denver,-3.40000000000001,0.799999999999997
+Detroit,Denver,-4,0.299999999999997
+Indiana,Denver,-3.09999999999999,-2.40000000000001
+Milwaukee,Denver,0.700000000000003,-3.7
+Orlando,Denver,-4.09999999999999,-0.700000000000003
+Philadelphia,Denver,-0.400000000000006,1
+Toronto,Denver,0.200000000000003,-1.7
+Denver,Denver,0,0
+Golden State,Denver,3,0.699999999999989
+Houston,Denver,2.59999999999999,1.8
+LA Clippers,Denver,-0.599999999999994,2.69999999999999
+Oklahoma City,Denver,-2.7,-1.80000000000001
+Portland,Denver,1.59999999999999,1.59999999999999
+San Antonio,Denver,-0.0999999999999943,2.3
+Utah,Denver,-2.09999999999999,-3.2
+Boston,Golden State,-3.7,-1.8
+Brooklyn,Golden State,-6.40000000000001,0.100000000000009
+Detroit,Golden State,-7,-0.399999999999991
+Indiana,Golden State,-6.09999999999999,-3.09999999999999
+Milwaukee,Golden State,-2.3,-4.39999999999999
+Orlando,Golden State,-7.09999999999999,-1.39999999999999
+Philadelphia,Golden State,-3.40000000000001,0.300000000000011
+Toronto,Golden State,-2.8,-2.39999999999999
+Denver,Golden State,-3,-0.699999999999989
+Golden State,Golden State,0,0
+Houston,Golden State,-0.400000000000006,1.10000000000001
+LA Clippers,Golden State,-3.59999999999999,2
+Oklahoma City,Golden State,-5.7,-2.5
+Portland,Golden State,-1.40000000000001,0.900000000000006
+San Antonio,Golden State,-3.09999999999999,1.60000000000001
+Utah,Golden State,-5.09999999999999,-3.89999999999999
+Boston,Houston,-3.3,-2.90000000000001
+Brooklyn,Houston,-6,-1
+Detroit,Houston,-6.59999999999999,-1.5
+Indiana,Houston,-5.69999999999999,-4.2
+Milwaukee,Houston,-1.89999999999999,-5.5
+Orlando,Houston,-6.69999999999999,-2.5
+Philadelphia,Houston,-3,-0.799999999999997
+Toronto,Houston,-2.39999999999999,-3.5
+Denver,Houston,-2.59999999999999,-1.8
+Golden State,Houston,0.400000000000006,-1.10000000000001
+Houston,Houston,0,0
+LA Clippers,Houston,-3.19999999999999,0.899999999999992
+Oklahoma City,Houston,-5.3,-3.60000000000001
+Portland,Houston,-1,-0.200000000000003
+San Antonio,Houston,-2.69999999999999,0.5
+Utah,Houston,-4.69999999999999,-5
+Boston,LA Clippers,-0.100000000000009,-3.8
+Brooklyn,LA Clippers,-2.80000000000001,-1.89999999999999
+Detroit,LA Clippers,-3.40000000000001,-2.39999999999999
+Indiana,LA Clippers,-2.5,-5.09999999999999
+Milwaukee,LA Clippers,1.3,-6.39999999999999
+Orlando,LA Clippers,-3.5,-3.39999999999999
+Philadelphia,LA Clippers,0.199999999999989,-1.69999999999999
+Toronto,LA Clippers,0.799999999999997,-4.39999999999999
+Denver,LA Clippers,0.599999999999994,-2.69999999999999
+Golden State,LA Clippers,3.59999999999999,-2
+Houston,LA Clippers,3.19999999999999,-0.899999999999992
+LA Clippers,LA Clippers,0,0
+Oklahoma City,LA Clippers,-2.10000000000001,-4.5
+Portland,LA Clippers,2.19999999999999,-1.09999999999999
+San Antonio,LA Clippers,0.5,-0.399999999999991
+Utah,LA Clippers,-1.5,-5.89999999999999
+Boston,Oklahoma City,2,0.700000000000003
+Brooklyn,Oklahoma City,-0.700000000000003,2.60000000000001
+Detroit,Oklahoma City,-1.3,2.10000000000001
+Indiana,Oklahoma City,-0.399999999999991,-0.599999999999994
+Milwaukee,Oklahoma City,3.40000000000001,-1.89999999999999
+Orlando,Oklahoma City,-1.39999999999999,1.10000000000001
+Philadelphia,Oklahoma City,2.3,2.80000000000001
+Toronto,Oklahoma City,2.90000000000001,0.100000000000009
+Denver,Oklahoma City,2.7,1.80000000000001
+Golden State,Oklahoma City,5.7,2.5
+Houston,Oklahoma City,5.3,3.60000000000001
+LA Clippers,Oklahoma City,2.10000000000001,4.5
+Oklahoma City,Oklahoma City,0,0
+Portland,Oklahoma City,4.3,3.40000000000001
+San Antonio,Oklahoma City,2.60000000000001,4.10000000000001
+Utah,Oklahoma City,0.600000000000009,-1.39999999999999
+Boston,Portland,-2.3,-2.7
+Brooklyn,Portland,-5,-0.799999999999997
+Detroit,Portland,-5.59999999999999,-1.3
+Indiana,Portland,-4.69999999999999,-4
+Milwaukee,Portland,-0.899999999999992,-5.3
+Orlando,Portland,-5.69999999999999,-2.3
+Philadelphia,Portland,-2,-0.599999999999994
+Toronto,Portland,-1.39999999999999,-3.3
+Denver,Portland,-1.59999999999999,-1.59999999999999
+Golden State,Portland,1.40000000000001,-0.900000000000006
+Houston,Portland,1,0.200000000000003
+LA Clippers,Portland,-2.19999999999999,1.09999999999999
+Oklahoma City,Portland,-4.3,-3.40000000000001
+Portland,Portland,0,0
+San Antonio,Portland,-1.69999999999999,0.700000000000003
+Utah,Portland,-3.69999999999999,-4.8
+Boston,San Antonio,-0.600000000000009,-3.40000000000001
+Brooklyn,San Antonio,-3.30000000000001,-1.5
+Detroit,San Antonio,-3.90000000000001,-2
+Indiana,San Antonio,-3,-4.7
+Milwaukee,San Antonio,0.799999999999997,-6
+Orlando,San Antonio,-4,-3
+Philadelphia,San Antonio,-0.300000000000011,-1.3
+Toronto,San Antonio,0.299999999999997,-4
+Denver,San Antonio,0.0999999999999943,-2.3
+Golden State,San Antonio,3.09999999999999,-1.60000000000001
+Houston,San Antonio,2.69999999999999,-0.5
+LA Clippers,San Antonio,-0.5,0.399999999999991
+Oklahoma City,San Antonio,-2.60000000000001,-4.10000000000001
+Portland,San Antonio,1.69999999999999,-0.700000000000003
+San Antonio,San Antonio,0,0
+Utah,San Antonio,-2,-5.5
+Boston,Utah,1.39999999999999,2.09999999999999
+Brooklyn,Utah,-1.30000000000001,4
+Detroit,Utah,-1.90000000000001,3.5
+Indiana,Utah,-1,0.799999999999997
+Milwaukee,Utah,2.8,-0.5
+Orlando,Utah,-2,2.5
+Philadelphia,Utah,1.69999999999999,4.2
+Toronto,Utah,2.3,1.5
+Denver,Utah,2.09999999999999,3.2
+Golden State,Utah,5.09999999999999,3.89999999999999
+Houston,Utah,4.69999999999999,5
+LA Clippers,Utah,1.5,5.89999999999999
+Oklahoma City,Utah,-0.600000000000009,1.39999999999999
+Portland,Utah,3.69999999999999,4.8
+San Antonio,Utah,2,5.5
+Utah,Utah,0,0

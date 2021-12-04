@@ -20,29 +20,14 @@ knitr::opts_chunk$set(echo=TRUE, comment=NA, tidy=TRUE, tidy.opts=list(width.cut
 library(tidyverse)
 library(dplyr)
 library(plyr)
-library(ggplot2)
-library(ggfortify)
-library(xtable)
 library(knitr)
-library(GGally)
-library(qqplotr)
-library(car)
-library(kableExtra)
-library(gridExtra)
-library(moonBook) 
-library(magrittr)
-library(broom)
-library(leaps)
-library(PropCIs)
 library(rstan)
-library(predict3d)
-library(ggeffects)
 ```
 
 # Merging Data and Data Cleaning
 
 ```{r}
-Regular <- read.csv("cleaned_data_v1.csv") # import the data 
+Regular <- read.csv("cleaned_data_v1_12_18.csv") # import the data 
 Regular$Success <- as.integer(Regular$Y) # add a column of True = 1 and False = 0 from Column "Y"
 y <- Regular$Success
 deltaOEFF <- Regular[, "deltaOEFF"]
@@ -57,7 +42,7 @@ summary(deltaDEFF) # let the grid for be [-9, 9]
 ```{r}
 y <- Regular$Success # length = 584
 deltaOEFF_grid <- seq(-9, 9, by = 0.1) # grid for prediction
-deltaDEFF_grid <- seq(-9, 9, by = 0.1)
+deltaDEFF_grid <- seq(-9, 9, by = 0.1) # length = 181
 x <- cbind(deltaOEFF, deltaDEFF) # dim(584, 2)
 K <- 1
 N <- length(y) # N = 584
@@ -73,12 +58,14 @@ data_list <- list(K = K, # create a list to fill rstan model
                   deltaDEFF_grid = deltaDEFF_grid)
 test_stan <- stan_model(file = "test_multi_logit.stan")
 fit <- sampling(object = test_stan, data = data_list)
-summary(regular_fit)[[1]][,"Rhat"]
+summary(fit)[[1]][,"Rhat"]
 ```
 
 ```{r}
-beta1_samples <- extract(fit, pars = "beta[1,1]")[["beta[1,1]"]] # extract 4000 coefficients each
-beta2_samples <- extract(fit, pars = "beta[2,1]")[["beta[2,1]"]]
+beta1_samples <- rstan::extract(fit, pars = "beta[1,1]")[["beta[1,1]"]] # extract 4000 coefficients 
+beta2_samples <- rstan::extract(fit, pars = "beta[2,1]")[["beta[2,1]"]]
+mean(beta1_samples)
+mean(beta2_samples)
 ```
 
 As we tune the prior of beta_1 and beta_2, the posterior betas do not change very much. As long as the prior stays within a reasonable range like keeping beta_1 positive and beta_2 negative, the posterior coefficients will stay within the range where beta_1 is around 0.25 and beta_2 around -0.15. This is coherent with the Bayesian characteristic that the posterior probability will be close to the likelihood / observed data if given sufficient data. In our case, we have 584 observed data, which can be considered significantly large. 
@@ -93,97 +80,49 @@ hist(beta1_samples, main = "beta_1", breaks = 100, xlab = "beta_1")
 hist(beta2_samples, main = "beta_2", breaks = 100, xlab = "beta_2")
 ```
 
-## Plot the predictive probabilities
-
-```{r fig.height = 7, fig.width = 14, fig.align = "center"}
-post_pred_grid <- extract(fit, pars = "prob_grid")[["prob_grid"]] # posterior grid
-par(mar = c(3,3,2,1), mgp = c(1.8, 0.5, 0), mfrow = c(1, 2))
-plot(1, type = "n", xlim = c(-9, 9), ylim = c(0,1),
-     xlab = "deltaOEFF", ylab = "Probability", main = "Posterior probabilities")
-for (i in 1:4000) { 
-  lines(deltaOEFF_grid, post_pred_grid[i,], col = 'grey', lwd = 0.2)
-}
-
-plot(1, type = "n", xlim = c(-9, 9), ylim = c(0,1),
-     xlab = "deltaDEFF", ylab = "Probability", main = "Posterior probabilities")
-for (j in 1:4000) { 
-  lines(deltaDEFF_grid, post_pred_grid[j,], col = rgb(1, 0, 0, 0.25), lwd = 0.2)
-}
-```
-
-Nicer plots with mean and 95% credible interval
-
-```{r fig.height = 7, fig.width = 14, fig.align = "center"}
-post_pred_mean <- apply(post_pred_grid, MARGIN = 2, FUN = mean)
-post_pred_l95 <- apply(post_pred_grid, MARGIN = 2, FUN = quantile, probs = 0.025)
-post_pred_u95 <- apply(post_pred_grid, MARGIN = 2, FUN = quantile, probs = 0.975)
-par(mar = c(3,3,2,1), mgp = c(1.8, 0.5, 0), mfrow = c(1, 2))
-# plot for predictor deltaOEFF
-plot(1, type= "n", xlim = c(-9, 9), ylim = c(0,1),
-     main = "Posterior probabilities", xlab = "deltaOEFF", ylab = "Probability")
-polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
-        y = c(post_pred_l95, rev(post_pred_u95)),
-        col = "grey",
-        border = NA)
-lines(deltaOEFF_grid, post_pred_mean, lwd = 1.5)
-legend("bottomleft", legend = c("Post. pred. mean", "95% uncertainty region"),
-       pch = c(NA, 15), lty = c(1, NA), col = c("black", "grey"))
-# plot for predictor deltaDEFF
-plot(1, type= "n", xlim = c(-9, 9), ylim = c(0,1),
-     main = "Posterior probabilities", xlab = "deltaDEFF", ylab = "Probability")
-polygon(x = c(deltaDEFF_grid, rev(deltaDEFF_grid)), 
-        y = c(post_pred_l95, rev(post_pred_u95)),
-        col = rgb(1, 0, 0, 0.25),
-        border = NA)
-lines(deltaDEFF_grid, post_pred_mean, lwd = 1.5)
-legend("bottomleft", legend = c("Post. pred. mean", "95% uncertainty region"),
-       pch = c(NA, 15), lty = c(1, NA), col = c("black", rgb(1, 0, 0, 0.25)))
-```
+# Plot
 
 The plots show a spaghetti-shape curve with less weights at mean x and mean y and more weights when x and y-axis approach each range limit. Here we can see that the mean probability has range 0.2 to 0.8 and has 95% credible interval that approaches 0.1 and 0.9 probability. This may show that with deltaOEFF or deltaDEFF, the probability of winning a game may differ from 0.1 to 0.9. 
 
-# Plot
+## Plot the predictive probabilities
 
 ```{r fig.height = 8, fig.width = 12, fig.align = "center"}
-###### use exact values ######
-# mean(deltaDEFF)
-deltaOEFF_grid_4000 <- seq(-9, 9, length = 4000) # create a grid with length 4000 to fit with the 4000 beta samples for plotting
-logit_deltaOEFF_grid_1 <- beta1_samples * deltaOEFF_grid_4000 + beta2_samples * mean(deltaDEFF) # plot deltaOEFF by setting deltaDEFF at its mean
-probs_1 <- exp(logit_deltaOEFF_grid_1)/(1 + exp(logit_deltaOEFF_grid_1))
-# mean(deltaDEFF) - sd(deltaDEFF)
-logit_deltaOEFF_grid_2 <- beta1_samples * deltaOEFF_grid_4000 + beta2_samples * (mean(deltaDEFF) - sd(deltaDEFF)) 
-probs_2 <- exp(logit_deltaOEFF_grid_2)/(1 + exp(logit_deltaOEFF_grid_2))
-# mean(deltaDEFF) + sd(deltaDEFF)
-logit_deltaOEFF_grid_3 <- beta1_samples * deltaOEFF_grid_4000 + beta2_samples * (mean(deltaDEFF) + sd(deltaDEFF)) 
-probs_3 <- exp(logit_deltaOEFF_grid_3)/(1 + exp(logit_deltaOEFF_grid_3))
+post_grid_meanD <- rstan::extract(fit, pars = "prob_meanD")[["prob_meanD"]]
+prob_meanD_minus_sd <- rstan::extract(fit, pars = "prob_meanD_minus_sd")[["prob_meanD_minus_sd"]]
+prob_meanD_plus_sd <- rstan::extract(fit, pars = "prob_meanD_plus_sd")[["prob_meanD_plus_sd"]]
+# at mean deltaDEFF
+post_grid_meanD_mean <- apply(post_grid_meanD, MARGIN = 2, FUN = mean)
+post_grid_meanD_l95 <- apply(post_grid_meanD, MARGIN = 2, FUN = quantile, probs = 0.025)
+post_grid_meanD_u95 <- apply(post_grid_meanD, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaDEFF - sd
+prob_meanD_minus_sd_mean <- apply(prob_meanD_minus_sd, MARGIN = 2, FUN = mean)
+prob_meanD_minus_sd_l95 <- apply(prob_meanD_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanD_minus_sd_u95 <- apply(prob_meanD_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaDEFF + sd
+prob_meanD_plus_sd_mean <- apply(prob_meanD_plus_sd, MARGIN = 2, FUN = mean)
+prob_meanD_plus_sd_l95 <- apply(prob_meanD_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanD_plus_sd_u95 <- apply(prob_meanD_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
 # plot
-plot(deltaOEFF_grid_4000, probs_1, 
-     ylim = c(0, 1),
-     type = "l", 
-     xlab = "deltaOEFF", ylab="Probabilities", main = "Probability with changing OEFF and fixed DEFF")
-lines(deltaOEFF_grid_4000, probs_2, type = 'l', col = 'grey')
-lines(deltaOEFF_grid_4000, probs_3, type = 'l', col = 'red')
-legend("bottomright", legend = c("mean_deltaDEFF", "mean_minus_1sd", "mean_plus_1sd"), 
-       lty = c(1, 1, 1), lwd = c(2, 2, 2), col = c('black', 'grey', 'red'))
-
-###### use mean values ######
+plot(1, type= "n", xlim = c(-9, 9), ylim = c(0,1),
+     main = "Probability with OEFF and fixed DEFF", xlab = "deltaOEFF", ylab = "Probability")
 # mean
-deltaOEFF_grid_with_mean_1 <- mean(beta1_samples) * deltaOEFF_grid + mean(beta2_samples) * mean(deltaDEFF) # plot deltaOEFF by setting deltaDEFF at its mean
-probs_with_mean_1 <- exp(deltaOEFF_grid_with_mean_1)/(1 + exp(deltaOEFF_grid_with_mean_1))
-# minus 1 sd
-deltaOEFF_grid_with_mean_2 <- mean(beta1_samples) * deltaOEFF_grid + mean(beta2_samples) * (mean(deltaDEFF) - sd(deltaDEFF))
-probs_with_mean_2 <- exp(deltaOEFF_grid_with_mean_2)/(1 + exp(deltaOEFF_grid_with_mean_2))
-# plus 1 sd
-deltaOEFF_grid_with_mean_3 <- mean(beta1_samples) * deltaOEFF_grid + mean(beta2_samples) * (mean(deltaDEFF) + sd(deltaDEFF))
-probs_with_mean_3 <- exp(deltaOEFF_grid_with_mean_3)/(1 + exp(deltaOEFF_grid_with_mean_3))
-# plot
-plot(deltaOEFF_grid, probs_with_mean_1, 
-     ylim = c(0, 1),
-     type = "l", 
-     lwd = 3, 
-     xlab = "deltaOEFF", ylab = "Probabilities", main = "Probability with changing OEFF and fixed DEFF")
-lines(deltaOEFF_grid, probs_with_mean_2, type = 'l', col = 'grey', lwd = 3)
-lines(deltaOEFF_grid, probs_with_mean_3, type = 'l', col = 'red', lwd = 3)
+polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
+        y = c(post_grid_meanD_l95, rev(post_grid_meanD_u95)),
+        col = alpha("black", 0.8),
+        border = NA)
+lines(deltaOEFF_grid, post_grid_meanD_mean, lwd = 1.5)
+# mean - sd 
+polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
+        y = c(prob_meanD_minus_sd_l95, rev(prob_meanD_minus_sd_u95)),
+        col = alpha("grey", 0.7),
+        border = NA)
+lines(deltaOEFF_grid, prob_meanD_minus_sd_mean, lwd = 1.5)
+# mean + sd
+polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
+        y = c(prob_meanD_plus_sd_l95, rev(prob_meanD_plus_sd_u95)),
+        col = alpha("red", 0.6),
+        border = NA)
+lines(deltaOEFF_grid, prob_meanD_plus_sd_mean, lwd = 1.5)
 legend("bottomright", legend = c("mean_deltaDEFF", "mean_minus_1sd", "mean_plus_1sd"), 
        lty = c(1, 1, 1), lwd = c(2, 2, 2), col = c('black', 'grey', 'red'))
 ```
@@ -193,87 +132,84 @@ The first plot uses all 4000 beta_1s and beta_2s as coefficients of the logistic
 Now try to fix deltaOEFF and change deltaDEFF
 
 ```{r fig.height = 8, fig.width = 12, fig.align = "center"}
-###### use exact values ######
-# mean
-deltaDEFF_grid_4000 <- seq(-9, 9, length = 4000) # create a grid with length 4000 to fit with the 4000 beta samples for plotting
-logit_deltaDEFF_grid_1 <- beta1_samples * mean(deltaOEFF) + beta2_samples * deltaDEFF_grid_4000 # plot deltaOEFF by setting deltaDEFF at its mean
-probs_1 <- exp(logit_deltaDEFF_grid_1)/(1 + exp(logit_deltaDEFF_grid_1))
-# minus 1 sd
-logit_deltaDEFF_grid_2 <- beta1_samples * (mean(deltaOEFF) - sd(deltaOEFF)) + beta2_samples * deltaDEFF_grid_4000 
-probs_2 <- exp(logit_deltaDEFF_grid_2)/(1 + exp(logit_deltaDEFF_grid_2))
-# plus 1 sd
-logit_deltaDEFF_grid_3 <- beta1_samples * (mean(deltaOEFF) + sd(deltaOEFF)) + beta2_samples * deltaDEFF_grid_4000 
-probs_3 <- exp(logit_deltaDEFF_grid_3)/(1 + exp(logit_deltaDEFF_grid_3))
+post_grid_meanO <- rstan::extract(fit, pars = "prob_meanO")[["prob_meanO"]]
+prob_meanO_minus_sd <- rstan::extract(fit, pars = "prob_meanO_minus_sd")[["prob_meanO_minus_sd"]]
+prob_meanO_plus_sd <- rstan::extract(fit, pars = "prob_meanO_plus_sd")[["prob_meanO_plus_sd"]]
+# at mean deltaOEFF
+post_grid_meanO_mean <- apply(post_grid_meanO, MARGIN = 2, FUN = mean)
+post_grid_meanO_l95 <- apply(post_grid_meanO, MARGIN = 2, FUN = quantile, probs = 0.025)
+post_grid_meanO_u95 <- apply(post_grid_meanO, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaOEFF - sd
+prob_meanO_minus_sd_mean <- apply(prob_meanO_minus_sd, MARGIN = 2, FUN = mean)
+prob_meanO_minus_sd_l95 <- apply(prob_meanO_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanO_minus_sd_u95 <- apply(prob_meanO_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaOEFF + sd
+prob_meanO_plus_sd_mean <- apply(prob_meanO_plus_sd, MARGIN = 2, FUN = mean)
+prob_meanO_plus_sd_l95 <- apply(prob_meanO_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanO_plus_sd_u95 <- apply(prob_meanO_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
 # plot
-plot(deltaDEFF_grid_4000, probs_1, ylim = c(0, 1), type = "l", xlab = "deltaDEFF", ylab = "Probabilities", main = "Probability with changing DEFF and fixed OEFF")
-lines(deltaDEFF_grid_4000, probs_2, type = 'l', col = 'grey')
-lines(deltaDEFF_grid_4000, probs_3, type = 'l', col = 'red')
-
-###### use mean values ######
+plot(1, type= "n", xlim = c(-9, 9), ylim = c(0,1),
+     main = "Probability with DEFF and fixed OEFF", xlab = "deltaDEFF", ylab = "Probability")
 # mean
-deltaDEFF_grid_with_mean_1 <- mean(beta1_samples) * mean(deltaOEFF) + mean(beta2_samples) * deltaDEFF_grid # plot deltaOEFF by setting deltaDEFF at its mean
-probs_with_mean_1 <- exp(deltaDEFF_grid_with_mean_1)/(1 + exp(deltaDEFF_grid_with_mean_1))
-# minus 1 sd
-deltaDEFF_grid_with_mean_2 <- mean(beta1_samples) * (mean(deltaOEFF) - sd(deltaOEFF)) + mean(beta2_samples) * deltaDEFF_grid 
-probs_with_mean_2 <- exp(deltaDEFF_grid_with_mean_2)/(1 + exp(deltaDEFF_grid_with_mean_2))
-# plus 1 sd
-deltaDEFF_grid_with_mean_3 <- mean(beta1_samples) * (mean(deltaOEFF) + sd(deltaOEFF)) + mean(beta2_samples) * deltaDEFF_grid 
-probs_with_mean_3 <- exp(deltaDEFF_grid_with_mean_3)/(1 + exp(deltaDEFF_grid_with_mean_3))
-# plot
-plot(deltaDEFF_grid, probs_with_mean_1, ylim = c(0, 1),type = "l", lwd = 3, 
-     xlab = "deltaOEFF", ylab = "Probabilities", main = "Probability with changing DEFF and fixed OEFF")
-lines(deltaDEFF_grid, probs_with_mean_2, type = 'l', col = 'grey', lwd = 3)
-lines(deltaDEFF_grid, probs_with_mean_3, type = 'l', col = 'red', lwd = 3)
+polygon(x = c(deltaDEFF_grid, rev(deltaDEFF_grid)), 
+        y = c(post_grid_meanO_l95, rev(post_grid_meanO_u95)),
+        col = alpha("black", 0.8),
+        border = NA)
+lines(deltaDEFF_grid, post_grid_meanO_mean, lwd = 1.5)
+# mean - sd 
+polygon(x = c(deltaDEFF_grid, rev(deltaDEFF_grid)), 
+        y = c(prob_meanO_minus_sd_l95, rev(prob_meanO_minus_sd_u95)),
+        col = alpha("grey", 0.7),
+        border = NA)
+lines(deltaDEFF_grid, prob_meanO_minus_sd_mean, lwd = 1.5)
+# mean + sd
+polygon(x = c(deltaDEFF_grid, rev(deltaDEFF_grid)), 
+        y = c(prob_meanO_plus_sd_l95, rev(prob_meanO_plus_sd_u95)),
+        col = alpha("red", 0.6),
+        border = NA)
+lines(deltaDEFF_grid, prob_meanO_plus_sd_mean, lwd = 1.5)
+legend("bottomleft", legend = c("mean_deltaOEFF", "mean_minus_1sd", "mean_plus_1sd"), 
+       lty = c(1, 1, 1), lwd = c(2, 2, 2), col = c('black', 'grey', 'red'))
 ```
 
 Similar plots with similar explanations. The probability of winning is roughly negatively associated with the predictor deltaDEFF. 
 
-___________________below are pairwise matrices and simulations sections___________________
-__________________________________not completed___________________________________
 
-Create a pairwise probability matrix
+# Zsun: Simulation
 
 ```{r}
-# import the data cleaned by Zhongxuan from base
-pairwise_data <- read.csv("pairwise_DEFF_OEFF_2019.csv") 
-# input values
-delta_Oi_vec <- pairwise_data$d_OEFF
-delta_Di_vec <- pairwise_data$d_DEFF
+source("zsun_playoff_simulator.R")
 
-# prob_seq <- rep(NA, length = 4000 * 256)
-for (i in 1:10) { 
-  prob_seq <- exp(beta1_samples[i] * delta_Oi_vec + beta2_samples[i] * delta_Di_vec)/(1 + exp(beta1_samples[i] * delta_Oi_vec + beta2_samples[i] * delta_Di_vec))
-  matrix_pairwise <- matrix(prob_seq, nrow = 16, ncol = 16)
-  print(matrix_pairwise)
+set.seed(20211129)
+pairwise_data <- read.csv("pairwise_DEFF_OEFF_2019.csv")
+champions_4000 <- rep()
+prob_matrix_4000 <- list()
+for (i in 1:4000){
+  simu_i_prob <- pairwise_data %>% 
+    mutate(p = exp(d_OEFF * beta1_samples[i] + d_DEFF * beta2_samples[i])/ (1 + exp(d_OEFF * beta1_samples[i] + d_DEFF * beta2_samples[i])))
+  prob_matrix_i <- matrix(simu_i_prob$p,nrow=16,ncol=16)
+  name <- pairwise_data[1:16,1]
+  colnames(prob_matrix_i) <- name
+  rownames(prob_matrix_i) <- name
+  prob_matrix_4000[[i]] <- prob_matrix_i # store the probability matrix
+  champions_4000[i] <- simu_final(P = prob_matrix_i)[1] # store the simu_result
 }
-
-logit_1 <- matrix(exp(beta1_samples[1] * delta_Oi_vec + beta2_samples[1] * delta_Di_vec)/(exp(beta1_samples[1] * delta_Oi_vec + beta2_samples[1] * delta_Di_vec) + 1), nrow = 16, ncol = 16)
-logit_2 <- matrix(exp(beta1_samples[2] * delta_Oi_vec + beta2_samples[2] * delta_Di_vec)/(exp(beta1_samples[2] * delta_Oi_vec + beta2_samples[2] * delta_Di_vec) + 1), nrow = 16, ncol = 16)
-logit_list <- list(logit_1, logit_2)
-
-for(i in 1:10) { # try 10 samples
-  logit <- matrix(exp(beta1_samples[i] * delta_Oi_vec + beta2_samples[i] * delta_Di_vec)/(exp(beta1_samples[i] * delta_Oi_vec + beta2_samples[i] * delta_Di_vec) + 1), nrow = 16, ncol = 16)
-  # print(logit)
-  logit_matrices <- list(logit)
-}
-
+table(champions_4000)/4000
+length(prob_matrix_4000)
 ```
 
+# MSE
 
 ```{r}
-for (i in 1:40) { 
-  as.numeric(lapply(beta1_samples[i] * delta_Oi_vec, sum)) + as.numeric(lapply(beta2_samples[i] * delta_Di_vec, sum))
-  }
-list_1 <- as.numeric(lapply(beta1_samples * delta_Oi_vec, sum)) + as.numeric(lapply(beta2_samples * delta_Di_vec, sum))
-list_1[1:256]
-list_1[257:512]
-seq_4000 <- seq(1, 4000, by = 1)
-for (i in seq_4000) {
-  a <- beta1_samples[i] * delta_Oi_vec
-}
+Regular_19 <- read.csv("cleaned_data_v1_19.csv") # import the data 
+Regular_19$Success <- as.integer(Regular_19$Y)
+deltaOEFF_19 <- Regular_19$deltaOEFF
+deltaDEFF_19 <- Regular_19$deltaDEFF
+predicted <- mean(beta1_samples) * deltaOEFF_19 + mean(beta2_samples) * deltaDEFF_19
+pred_prob <- exp(predicted)/(exp(predicted) + 1)
+observed <- Regular_19$Success
+(sum(observed - pred_prob)^2)/length(pred_prob)
 ```
-
-
 
 
 

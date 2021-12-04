@@ -1,0 +1,17 @@
+
+```{r}
+library(caret)
+Regular <- read.csv("cleaned_data_v1.csv") 
+Regular$Success <- as.integer(Regular$Y) 
+y <- Regular$Success
+```
+
+
+
+```{r}
+set.seed(100)
+trctrl <- trainControl(method = "cv", number = 10, savePredictions=TRUE)
+nb_fit <- train(factor(Success) ~deltaOEFF + deltaDEFF + 0, data = Regular, method = "naive_bayes", trControl=trctrl, tuneLength = 0)
+nb_fit
+```
+

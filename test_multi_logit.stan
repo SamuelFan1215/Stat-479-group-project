@@ -14,8 +14,8 @@ parameters {
 model {
   matrix[N, K] x_beta = x * beta;
 
-  to_vector(beta)[1] ~ normal(0.92, 0.05); // prior for beta_1, not specified
-  to_vector(beta)[2] ~ normal(-0.03, 0.05); // prior for beta_2
+  to_vector(beta)[1] ~ normal(0.75, 0.05); // prior for beta_1, not specified
+  to_vector(beta)[2] ~ normal(-0.39, 0.05); // prior for beta_2
     for(n in 1:N) {
     y[n] ~ bernoulli_logit(x_beta[n]'); // use inverse matrix
   }
@@ -23,10 +23,40 @@ model {
 
 generated quantities{
   vector<lower = 0, upper = 1>[n_grid] prob_grid; // predictive probabilities grid
+  
+  vector<lower = 0, upper = 1>[n_grid] prob_meanD; // fix deltaDEFF at mean
+  vector<lower = 0, upper = 1>[n_grid] prob_meanD_minus_sd; // fix deltaDEFF at mean-sd
+  vector<lower = 0, upper = 1>[n_grid] prob_meanD_plus_sd; // fix deltaDEFF at mean+sd
+  
+  vector<lower = 0, upper = 1>[n_grid] prob_meanO; 
+  vector<lower = 0, upper = 1>[n_grid] prob_meanO_minus_sd; 
+  vector<lower = 0, upper = 1>[n_grid] prob_meanO_plus_sd; 
+  
+  for(p in 1:n_grid){
+    prob_grid[p] = inv_logit(deltaOEFF_grid[p] * to_vector(beta)[1] + deltaDEFF_grid[p] * to_vector(beta)[2]); // posterior predivtive probabilities
+  }
+  // with changing deltaDEFF
   for(i in 1:n_grid){
-    prob_grid[i] = inv_logit(deltaOEFF_grid[i] * to_vector(beta)[1] + deltaDEFF_grid[i] * to_vector(beta)[2]); // posterior predivtive probabilities
+    prob_meanD[i] = inv_logit(deltaOEFF_grid[i] * to_vector(beta)[1] + mean(deltaDEFF_grid) * to_vector(beta)[2]);
+  }
+  for(j in 1:n_grid){
+    prob_meanD_minus_sd[j] = inv_logit(deltaOEFF_grid[j] * to_vector(beta)[1] + (mean(deltaDEFF_grid) - sd(deltaDEFF_grid)) * to_vector(beta)[2]);
+  }
+  for(k in 1:n_grid){
+    prob_meanD_plus_sd[k] = inv_logit(deltaOEFF_grid[k] * to_vector(beta)[1] + (mean(deltaDEFF_grid) + sd(deltaDEFF_grid)) * to_vector(beta)[2]);
+  }
+  // with changing deltaOEFF
+  for(a in 1:n_grid){
+    prob_meanO[a] = inv_logit(mean(deltaOEFF_grid) * to_vector(beta)[1] + deltaDEFF_grid[a] * to_vector(beta)[2]);
+  }
+  for(b in 1:n_grid){
+    prob_meanO_minus_sd[b] = inv_logit((mean(deltaOEFF_grid) - sd(deltaOEFF_grid)) * to_vector(beta)[1] + deltaDEFF_grid[b] * to_vector(beta)[2]);
+  }
+  for(c in 1:n_grid){
+    prob_meanO_plus_sd[c] = inv_logit((mean(deltaOEFF_grid) + sd(deltaOEFF_grid)) * to_vector(beta)[1] + deltaDEFF_grid[c] * to_vector(beta)[2]);
   }
 }
+
 
 
 
