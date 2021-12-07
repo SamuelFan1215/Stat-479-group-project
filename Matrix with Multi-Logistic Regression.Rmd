@@ -1,0 +1,416 @@
+---
+title: "Stat 479 Group Project with Matrix and Multiple Logistic Regression"
+author: "Basketball Playoff Prediction Team"
+date: "Nov 22 2021"
+output:
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhf{}
+- \rhead{BPP}
+- \lhead{STAT 479 GP}
+- \cfoot{\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, comment=NA, tidy=TRUE, tidy.opts=list(width.cutoff=45), warning=FALSE, message=FALSE, fig.align='center')
+
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(knitr)
+library(rstan)
+```
+
+# Merging Data and Data Cleaning
+
+```{r import data}
+Regular <- read.csv("cleaned_data_v1_12_18.csv") # import the data 
+Regular$Success <- as.integer(Regular$Y) # add a column of True = 1 and False = 0 from Column "Y"
+y <- Regular$Success
+deltaOEFF <- Regular[, "deltaOEFF"]
+deltaDEFF <- Regular[, "deltaDEFF"]
+summary(deltaOEFF) # let the grid for be [-9, 9]
+summary(deltaDEFF) # let the grid for be [-9, 9]
+```
+
+## Model
+
+```{r model fitting}
+y <- Regular$Success # length = 502
+deltaOEFF_grid <- seq(-9, 9, by = 0.1) # grid for posterior prediction
+deltaDEFF_grid <- seq(-9, 9, by = 0.1) # length = 181
+x <- cbind(deltaOEFF, deltaDEFF) # dim(584, 2)
+K <- 1
+N <- length(y) # N = 502
+D <- dim(x)[2] # D = 2
+n_grid = length(deltaOEFF_grid) # n_grid = 181
+data_list <- list(K = K, # create a list to fill rstan model
+                  N = N,
+                  D = D,
+                  y = y,
+                  x = x, 
+                  n_grid = n_grid, 
+                  deltaOEFF_grid = deltaOEFF_grid, 
+                  deltaDEFF_grid = deltaDEFF_grid)
+test_stan <- stan_model(file = "multi_logistic.stan")
+fit <- sampling(object = test_stan, data = data_list)
+summary(fit)[[1]][,"Rhat"]
+```
+
+# Preliminary visual plots
+
+```{r posterior coef}
+beta1_samples <- rstan::extract(fit, pars = "beta[1,1]")[["beta[1,1]"]] # extract 4000 coefficients 
+beta2_samples <- rstan::extract(fit, pars = "beta[2,1]")[["beta[2,1]"]]
+mean(beta1_samples)
+mean(beta2_samples)
+```
+
+As we tune the prior of beta_1 and beta_2, the posterior betas do not change very much. As long as the prior stays within a reasonable range like keeping beta_1 positive and beta_2 negative, the posterior coefficients will stay within the range where beta_1 is around 0.25 and beta_2 around -0.15. This is coherent with the Bayesian characteristic that the posterior probability will be close to the likelihood / observed data if given sufficient data. In our case, we have 584 observed data, which can be considered significantly large.
+
+## Plots for coefficients:
+
+```{r coef plots, fig.height = 7, fig.width = 12, fig.align = "center"}
+par(mfrow = c(1,2))
+hist(beta1_samples, main = "beta_1", breaks = 100, xlab = "beta_1")
+hist(beta2_samples, main = "beta_2", breaks = 100, xlab = "beta_2")
+```
+
+# Posterior Model Plots
+
+Since we have 2 predictors, the ideal plot shall be 3D. In order to present the plot in 2D, we fix one predictor on certain values and put the other predictor on the x-axis. In order to present the data properly, we decide to fix one predictor on 3 values: its mean, mean + 1sd, mean - 1sd.
+
+## Plot the predictive probabilities
+
+```{r fig.height = 8, fig.width = 12, fig.align = "center"}
+post_grid_meanD <- rstan::extract(fit, pars = "prob_meanD")[["prob_meanD"]]
+prob_meanD_minus_sd <- rstan::extract(fit, pars = "prob_meanD_minus_sd")[["prob_meanD_minus_sd"]]
+prob_meanD_plus_sd <- rstan::extract(fit, pars = "prob_meanD_plus_sd")[["prob_meanD_plus_sd"]]
+# at mean deltaDEFF
+post_grid_meanD_mean <- apply(post_grid_meanD, MARGIN = 2, FUN = mean)
+post_grid_meanD_l95 <- apply(post_grid_meanD, MARGIN = 2, FUN = quantile, probs = 0.025)
+post_grid_meanD_u95 <- apply(post_grid_meanD, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaDEFF - sd
+prob_meanD_minus_sd_mean <- apply(prob_meanD_minus_sd, MARGIN = 2, FUN = mean)
+prob_meanD_minus_sd_l95 <- apply(prob_meanD_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanD_minus_sd_u95 <- apply(prob_meanD_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaDEFF + sd
+prob_meanD_plus_sd_mean <- apply(prob_meanD_plus_sd, MARGIN = 2, FUN = mean)
+prob_meanD_plus_sd_l95 <- apply(prob_meanD_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanD_plus_sd_u95 <- apply(prob_meanD_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
+# plot
+plot(1, type= "n", xlim = c(-9, 9), ylim = c(0,1),
+     main = "Probability with OEFF and fixed DEFF", xlab = "deltaOEFF", ylab = "Probability")
+# mean
+polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
+        y = c(post_grid_meanD_l95, rev(post_grid_meanD_u95)),
+        col = alpha("black", 0.8),
+        border = NA)
+lines(deltaOEFF_grid, post_grid_meanD_mean, lwd = 1.5)
+# mean - sd 
+polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
+        y = c(prob_meanD_minus_sd_l95, rev(prob_meanD_minus_sd_u95)),
+        col = alpha("grey", 0.7),
+        border = NA)
+lines(deltaOEFF_grid, prob_meanD_minus_sd_mean, lwd = 1.5)
+# mean + sd
+polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
+        y = c(prob_meanD_plus_sd_l95, rev(prob_meanD_plus_sd_u95)),
+        col = alpha("red", 0.6),
+        border = NA)
+lines(deltaOEFF_grid, prob_meanD_plus_sd_mean, lwd = 1.5)
+legend("bottomright", legend = c("mean_deltaDEFF", "mean_minus_1sd", "mean_plus_1sd"), 
+       lty = c(1, 1, 1), lwd = c(2, 2, 2), col = c('black', 'grey', 'red'))
+```
+
+The first plot uses all 4000 beta_1s and beta_2s as coefficients of the logistic regression. Here we can see that the x-axis deltaOEFF is positively associated with the posterior probability, where the black line is predictor deltaOEFF when deltaDEFF is at its mean, the grey line is deltaDEFF at mean minus one standard deviation, and the red line is deltaDEFF at mean plus one standard deviation. We can see the grey line generally has a higher probability (the position is mean - 1sd). This may be because the two predictors tend to be oppositely plotted, which makes sense in real life as the offensive rate is calculated as the opposite of the other team's defensive rate.
+
+Now try to fix deltaOEFF and put deltaDEFF on x-axis
+
+```{r fig.height = 8, fig.width = 12, fig.align = "center"}
+post_grid_meanO <- rstan::extract(fit, pars = "prob_meanO")[["prob_meanO"]]
+prob_meanO_minus_sd <- rstan::extract(fit, pars = "prob_meanO_minus_sd")[["prob_meanO_minus_sd"]]
+prob_meanO_plus_sd <- rstan::extract(fit, pars = "prob_meanO_plus_sd")[["prob_meanO_plus_sd"]]
+# at mean deltaOEFF
+post_grid_meanO_mean <- apply(post_grid_meanO, MARGIN = 2, FUN = mean)
+post_grid_meanO_l95 <- apply(post_grid_meanO, MARGIN = 2, FUN = quantile, probs = 0.025)
+post_grid_meanO_u95 <- apply(post_grid_meanO, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaOEFF - sd
+prob_meanO_minus_sd_mean <- apply(prob_meanO_minus_sd, MARGIN = 2, FUN = mean)
+prob_meanO_minus_sd_l95 <- apply(prob_meanO_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanO_minus_sd_u95 <- apply(prob_meanO_minus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
+# at mean deltaOEFF + sd
+prob_meanO_plus_sd_mean <- apply(prob_meanO_plus_sd, MARGIN = 2, FUN = mean)
+prob_meanO_plus_sd_l95 <- apply(prob_meanO_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.025)
+prob_meanO_plus_sd_u95 <- apply(prob_meanO_plus_sd, MARGIN = 2, FUN = quantile, probs = 0.975)
+# plot
+plot(1, type= "n", xlim = c(-9, 9), ylim = c(0,1),
+     main = "Probability with DEFF and fixed OEFF", xlab = "deltaDEFF", ylab = "Probability")
+# mean
+polygon(x = c(deltaDEFF_grid, rev(deltaDEFF_grid)), 
+        y = c(post_grid_meanO_l95, rev(post_grid_meanO_u95)),
+        col = alpha("black", 0.8),
+        border = NA)
+lines(deltaDEFF_grid, post_grid_meanO_mean, lwd = 1.5)
+# mean - sd 
+polygon(x = c(deltaDEFF_grid, rev(deltaDEFF_grid)), 
+        y = c(prob_meanO_minus_sd_l95, rev(prob_meanO_minus_sd_u95)),
+        col = alpha("grey", 0.7),
+        border = NA)
+lines(deltaDEFF_grid, prob_meanO_minus_sd_mean, lwd = 1.5)
+# mean + sd
+polygon(x = c(deltaDEFF_grid, rev(deltaDEFF_grid)), 
+        y = c(prob_meanO_plus_sd_l95, rev(prob_meanO_plus_sd_u95)),
+        col = alpha("red", 0.6),
+        border = NA)
+lines(deltaDEFF_grid, prob_meanO_plus_sd_mean, lwd = 1.5)
+legend("bottomleft", legend = c("mean_deltaOEFF", "mean_minus_1sd", "mean_plus_1sd"), 
+       lty = c(1, 1, 1), lwd = c(2, 2, 2), col = c('black', 'grey', 'red'))
+```
+
+The probability of winning is roughly negatively associated with the predictor deltaDEFF.
+
+# Zsun: Simulation
+
+```{r}
+source("zsun_playoff_simulator.R")
+
+set.seed(20211129)
+pairwise_data <- read.csv("pairwise_DEFF_OEFF_2019.csv")
+champions_4000 <- rep()
+prob_matrix_4000 <- list()
+for (i in 1:4000){
+  simu_i_prob <- pairwise_data %>% 
+    mutate(p = exp(d_OEFF * beta1_samples[i] + d_DEFF * beta2_samples[i])/ (1 + exp(d_OEFF * beta1_samples[i] + d_DEFF * beta2_samples[i])))
+  prob_matrix_i <- matrix(simu_i_prob$p,nrow=16,ncol=16)
+  name <- pairwise_data[1:16,1]
+  colnames(prob_matrix_i) <- name
+  rownames(prob_matrix_i) <- name
+  prob_matrix_4000[[i]] <- prob_matrix_i # store the probability matrix
+  champions_4000[i] <- simu_final(P = prob_matrix_i)[1] # store the simu_result
+}
+table(champions_4000)/4000
+# length(prob_matrix_4000)
+```
+
+# MSE
+
+## MSE for 18-19 playoff prediction
+
+```{r}
+Regular_19 <- read.csv("cleaned_data_v1_19.csv") # import the data 
+Regular_19$Success <- as.integer(Regular_19$Y)
+deltaOEFF_19 <- Regular_19$deltaOEFF
+deltaDEFF_19 <- Regular_19$deltaDEFF
+predicted <- mean(beta1_samples) * deltaOEFF_19 + mean(beta2_samples) * deltaDEFF_19
+pred_prob <- exp(predicted)/(exp(predicted) + 1)
+observed <- Regular_19$Success
+O_minus_P <- (observed - pred_prob)^2
+sum(O_minus_P)/length(pred_prob)
+```
+
+# Cross validation
+
+## Split into 5 folds
+
+```{r}
+set.seed(123)
+idx <- sample(1:502)
+fold1 <- idx[1:100]
+fold2 <- idx[101:200]
+fold3 <- idx[201:300]
+fold4 <- idx[301:401]
+fold5 <- idx[402:502]
+```
+
+## MSE using DEFF only
+
+### fold 1
+
+```{r}
+train_cv1 <- Regular[-fold1,]
+test_cv1 <- Regular[fold1,]
+
+y <- train_cv1$Success # length = 584
+deltaDEFF_grid <- seq(-9, 9, by = 0.1) # grid for prediction
+x <- train_cv1$deltaDEFF
+N <- length(y) 
+n_grid = length(deltaDEFF_grid) # n_grid = 181
+data_list <- list(n_grid = n_grid,
+                  y = y, 
+                  deltaDEFF = x, 
+                  N = N, 
+                  deltaDEFF_grid = deltaDEFF_grid)
+test_stan <- stan_model(file = "DEFF_Only.stan")
+fit <- sampling(object = test_stan, data = data_list)
+beta2_samples <- extract(fit, pars = "beta")[["beta"]] # extract 4000 coefficients each
+### Calculate MSE
+mean.p.train <- rep(0,dim(train_cv1)[1])
+mean.p.test <- rep(0,dim(test_cv1)[1])
+for ( i in 1:4000){
+  b2 <- beta2_samples[i]
+  log.pred.train <- b2 * train_cv1$deltaDEFF
+  log.pred.test <- b2 * test_cv1$deltaDEFF
+  p.train <- exp(log.pred.train) / (1 + exp(log.pred.train))
+  p.test <- exp(log.pred.test) / (1 + exp(log.pred.test))
+  mean.p.train <- mean.p.train + p.train/4000
+  mean.p.test <- mean.p.test  + p.test/4000
+}
+
+(mse_cv1_train <- mean((train_cv1$Y - mean.p.train)^2))
+(mse_cv1_test <- mean((test_cv1$Y - mean.p.test)^2))
+```
+
+### fold 2
+
+```{r}
+train_cv2 <- Regular[-fold2,]
+test_cv2 <- Regular[fold2,]
+
+y <- train_cv2$Success 
+deltaDEFF_grid <- seq(-9, 9, by = 0.1) 
+x <- train_cv2$deltaDEFF
+N <- length(y) 
+n_grid = length(deltaDEFF_grid) 
+data_list <- list(n_grid = n_grid,
+                  y = y, 
+                  deltaDEFF = x, 
+                  N = N, 
+                  deltaDEFF_grid = deltaDEFF_grid)
+test_stan <- stan_model(file = "DEFF_Only.stan")
+fit <- sampling(object = test_stan, data = data_list)
+beta2_samples <- extract(fit, pars = "beta")[["beta"]] 
+### Calculate MSE
+mean.p.train <- rep(0,dim(train_cv2)[1])
+mean.p.test <- rep(0,dim(test_cv2)[1])
+for (i in 1:4000){
+  b2 <- beta2_samples[i]
+  log.pred.train <- b2 * train_cv2$deltaDEFF
+  log.pred.test <- b2 * test_cv2$deltaDEFF
+  p.train <- exp(log.pred.train) / (1 + exp(log.pred.train))
+  p.test <- exp(log.pred.test) / (1 + exp(log.pred.test))
+  mean.p.train <- mean.p.train + p.train/4000
+  mean.p.test <- mean.p.test  + p.test/4000
+}
+
+(mse_cv2_train <- mean((train_cv2$Y - mean.p.train)^2))
+(mse_cv2_test <- mean((test_cv2$Y - mean.p.test)^2))
+```
+
+### fold 3
+
+```{r}
+train_cv3 <- Regular[-fold3,]
+test_cv3 <- Regular[fold3,]
+
+y <- train_cv3$Success 
+deltaDEFF_grid <- seq(-9, 9, by = 0.1) 
+x <- train_cv3$deltaDEFF
+N <- length(y) 
+n_grid = length(deltaDEFF_grid) 
+data_list <- list(n_grid = n_grid,
+                  y = y, 
+                  deltaDEFF = x, 
+                  N = N, 
+                  deltaDEFF_grid = deltaDEFF_grid)
+test_stan <- stan_model(file = "DEFF_Only.stan")
+fit <- sampling(object = test_stan, data = data_list)
+beta2_samples <- extract(fit, pars = "beta")[["beta"]] 
+### Calculate MSE
+mean.p.train <- rep(0,dim(train_cv3)[1])
+mean.p.test <- rep(0,dim(test_cv3)[1])
+for (i in 1:4000){
+  b2 <- beta2_samples[i]
+  log.pred.train <- b2 * train_cv3$deltaDEFF
+  log.pred.test <- b2 * test_cv3$deltaDEFF
+  p.train <- exp(log.pred.train) / (1 + exp(log.pred.train))
+  p.test <- exp(log.pred.test) / (1 + exp(log.pred.test))
+  mean.p.train <- mean.p.train + p.train/4000
+  mean.p.test <- mean.p.test  + p.test/4000
+}
+
+(mse_cv3_train <- mean((train_cv3$Y - mean.p.train)^2))
+(mse_cv3_test <- mean((test_cv3$Y - mean.p.test)^2))
+```
+
+### fold 4
+
+```{r}
+train_cv4 <- Regular[-fold4,]
+test_cv4 <- Regular[fold4,]
+
+y <- train_cv4$Success 
+deltaDEFF_grid <- seq(-9, 9, by = 0.1) 
+x <- train_cv4$deltaDEFF
+N <- length(y) 
+n_grid = length(deltaDEFF_grid) 
+data_list <- list(n_grid = n_grid,
+                  y = y, 
+                  deltaDEFF = x, 
+                  N = N, 
+                  deltaDEFF_grid = deltaDEFF_grid)
+test_stan <- stan_model(file = "DEFF_Only.stan")
+fit <- sampling(object = test_stan, data = data_list)
+beta2_samples <- extract(fit, pars = "beta")[["beta"]] 
+### Calculate MSE
+mean.p.train <- rep(0,dim(train_cv4)[1])
+mean.p.test <- rep(0,dim(test_cv4)[1])
+for (i in 1:4000){
+  b2 <- beta2_samples[i]
+  log.pred.train <- b2 * train_cv4$deltaDEFF
+  log.pred.test <- b2 * test_cv4$deltaDEFF
+  p.train <- exp(log.pred.train) / (1 + exp(log.pred.train))
+  p.test <- exp(log.pred.test) / (1 + exp(log.pred.test))
+  mean.p.train <- mean.p.train + p.train/4000
+  mean.p.test <- mean.p.test  + p.test/4000
+}
+
+(mse_cv4_train <- mean((train_cv4$Y - mean.p.train)^2))
+(mse_cv4_test <- mean((test_cv4$Y - mean.p.test)^2))
+```
+
+### fold 5 
+
+```{r}
+train_cv5 <- Regular[-fold5,]
+test_cv5 <- Regular[fold5,]
+
+y <- train_cv4$Success 
+deltaDEFF_grid <- seq(-9, 9, by = 0.1) 
+x <- train_cv5$deltaDEFF
+N <- length(y) 
+n_grid = length(deltaDEFF_grid) 
+data_list <- list(n_grid = n_grid,
+                  y = y, 
+                  deltaDEFF = x, 
+                  N = N, 
+                  deltaDEFF_grid = deltaDEFF_grid)
+test_stan <- stan_model(file = "DEFF_Only.stan")
+fit <- sampling(object = test_stan, data = data_list)
+beta2_samples <- extract(fit, pars = "beta")[["beta"]] 
+### Calculate MSE
+mean.p.train <- rep(0,dim(train_cv5)[1])
+mean.p.test <- rep(0,dim(test_cv5)[1])
+for (i in 1:4000){
+  b2 <- beta2_samples[i]
+  log.pred.train <- b2 * train_cv5$deltaDEFF
+  log.pred.test <- b2 * test_cv5$deltaDEFF
+  p.train <- exp(log.pred.train) / (1 + exp(log.pred.train))
+  p.test <- exp(log.pred.test) / (1 + exp(log.pred.test))
+  mean.p.train <- mean.p.train + p.train/4000
+  mean.p.test <- mean.p.test  + p.test/4000
+}
+
+(mse_cv5_train <- mean((train_cv5$Y - mean.p.train)^2))
+(mse_cv5_test <- mean((test_cv5$Y - mean.p.test)^2))
+```
+
+```{r}
+# train
+mean(c(mse_cv1_train,mse_cv2_train,mse_cv3_train,mse_cv4_train,mse_cv5_train))
+# test
+mean(c(mse_cv1_test,mse_cv2_test,mse_cv3_test,mse_cv4_test,mse_cv5_test))
+```
