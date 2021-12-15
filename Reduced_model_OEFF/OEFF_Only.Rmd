@@ -1,0 +1,160 @@
+---
+title: "Stat 479 Group Project"
+author: "Basketball playoff prediction"
+date: "Nov 13 2021"
+output:
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhf{}
+- \rhead{BPP}
+- \lhead{STAT 479 GP}
+- \cfoot{\thepage}
+--- 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, comment=NA, tidy=TRUE, tidy.opts=list(width.cutoff=45), warning=FALSE, message=FALSE, fig.align='center')
+
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(knitr)
+library(rstan)
+```
+
+# Merging Data and Data Cleaning
+
+```{r}
+Regular <- read.csv("cleaned_data_v1.csv") # import the data 
+Regular$Success <- as.integer(Regular$Y) # add a column of True = 1 and False = 0 from Column "Y"
+y <- Regular$Success
+deltaOEFF <- Regular[, "deltaOEFF"]
+summary(deltaOEFF) # let the grid for be [-9, 9]
+# glm(y ~ deltaOEFF + deltaDEFF + 0, data = Regular, family = binomial) # cheat a little
+```
+
+## Model
+
+```{r}
+y <- Regular$Success # length = 584
+deltaOEFF_grid <- seq(-9, 9, by = 0.1) # grid for prediction
+n_grid = length(deltaOEFF_grid) # n_grid = 181
+N <- length(y)
+data_list <- list(n_grid = n_grid,
+                  y = y, 
+                  deltaOEFF = deltaOEFF, 
+                  N = N, 
+                  deltaOEFF_grid = deltaOEFF_grid)
+test_stan <- stan_model(file = "OEFF_Only.stan")
+fit <- sampling(object = test_stan, data = data_list)
+summary(fit)[[1]][,"Rhat"]
+```
+
+```{r}
+beta1_samples <- extract(fit, pars = "beta")[["beta"]] # extract 4000 coefficients each
+mean(beta1_samples)
+prob_grid <- extract(fit, pars = 'prob_grid')[['prob_grid']]
+
+prob_mean <- apply(prob_grid, MARGIN = 2, FUN = mean) # computes mean of each column of prob_grid1
+prob_l95 <- apply(prob_grid, MARGIN = 2, FUN = quantile, probs = c(0.025))
+prob_u95 <- apply(prob_grid, MARGIN = 2, FUN = quantile, probs = c(0.975))
+```
+
+# Preliminary visual plots
+
+## Plots for coefficients: 
+
+```{r fig.height = 7, fig.width = 14, fig.align = "center"}
+hist(beta1_samples, main = "beta", breaks = 100, xlab = "beta")
+```
+
+```{r}
+plot(1, type = "n", xlim = c(-9, 9), ylim = c(0,1),
+     xlab = "OEFF", ylab = "Prob", main = "Probability with OEFF")
+lines(deltaOEFF_grid, prob_grid[1, ], col = 'black')
+polygon(x = c(deltaOEFF_grid, rev(deltaOEFF_grid)), 
+        y = c(prob_l95, rev(prob_u95)),
+        col = alpha('pink'),
+        border = NA)
+```
+
+#### Zsun: Simulation
+```{r}
+battle <- function(team_name1, team_name2, P){
+  t1.idx <- which(rownames(P) == team_name1)
+  t2.idx <- which(rownames(P) == team_name2)
+  p.win <- P[t1.idx,t2.idx] # probability of team1 beats team2
+  simu_result <- rbinom(n=1,size=7,prob=p.win)
+  if(simu_result >= 4){
+    return(team_name1)
+  } else{
+    return(team_name2)
+  }
+}
+```
+
+```{r}
+team_list_2019 <- c("Golden State","LA Clippers","Houston","Utah","Portland","Oklahoma City","Denver","San Antonio","Milwaukee","Detroit","Boston","Indiana","Philadelphia","Brooklyn","Toronto","Orlando")
+simu_final <- function(team_name_list = team_list_2019,P){
+  #
+  g1.1 <- battle(team_name_list[1],team_name_list[2],P)
+  g1.2 <- battle(team_name_list[3],team_name_list[4],P)
+  g2.1 <- battle(g1.1,g1.2,P) # 1 of the 4
+  #
+  g1.3 <- battle(team_name_list[5],team_name_list[6],P)
+  g1.4 <- battle(team_name_list[7],team_name_list[8],P)
+  g2.2 <- battle(g1.3,g1.4,P) # 1 of the 4
+  #
+  g3.1 <- battle(g2.1,g2.2,P) # 1 of the 8 (semi final)
+  ##
+  g1.5 <- battle(team_name_list[9],team_name_list[10],P)
+  g1.6 <- battle(team_name_list[11],team_name_list[12],P)
+  g2.3 <- battle(g1.5,g1.6,P) # 1 of the 4
+  #
+  g1.7 <- battle(team_name_list[13],team_name_list[14],P)
+  g1.8 <- battle(team_name_list[15],team_name_list[16],P)
+  g2.4 <- battle(g1.7,g1.8,P) # 1 of the 4
+  #
+  g3.2 <- battle(g2.3,g2.4,P) # 1 of the 8 (semi final)
+  ####
+  final <- battle(g3.1,g3.2,P) # NBA FINAL
+  second_place <- ifelse(g3.1==final,g3.2,g3.1)
+  
+  return(c(final,second_place))
+}
+```
+
+```{r}
+source("zsun_playoff_simulator.R")
+
+set.seed(20211129)
+pairwise_data <- read.csv("pairwise_DEFF_OEFF_2019.csv")
+champions_4000 <- rep()
+prob_matrix_4000 <- list()
+for (i in 1:4000){
+  simu_i_prob <- pairwise_data %>% 
+    mutate(p = exp(d_OEFF * beta1_samples[i])/ (1 + exp(d_OEFF * beta1_samples[i])))
+  prob_matrix_i <- matrix(simu_i_prob$p,nrow=16,ncol=16)
+  name <- pairwise_data[1:16,1]
+  colnames(prob_matrix_i) <- name
+  rownames(prob_matrix_i) <- name
+  prob_matrix_4000[[i]] <- prob_matrix_i # store the probability matrix
+  champions_4000[i] <- simu_final(P = prob_matrix_i)[1] # store the simu_result
+}
+table(champions_4000)/4000
+length(prob_matrix_4000)
+```
+
+
+
+
+
+
+
+
+
+
+
+
